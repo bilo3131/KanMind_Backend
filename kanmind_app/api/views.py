@@ -3,6 +3,7 @@ from rest_framework.permissions import IsAuthenticated
 from .serializers import BoardDetailSerializer, BoardSerializer, CommentSerializer, TaskSerializer
 from kanmind_app.models import Board, Comment, Task
 from rest_framework.response import Response
+from .permissions import IsBoardMemberOrOwner
 
 class BoardListCreateView(generics.ListCreateAPIView):
     serializer_class = BoardSerializer
@@ -19,6 +20,7 @@ class BoardListCreateView(generics.ListCreateAPIView):
 class BoardDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = BoardDetailSerializer
     queryset = Board.objects.all()
+    permission_classes = [IsAuthenticated, IsBoardMemberOrOwner]
     
 class TaskListCreateView(generics.ListCreateAPIView):
     serializer_class = TaskSerializer
