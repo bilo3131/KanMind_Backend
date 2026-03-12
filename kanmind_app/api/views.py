@@ -1,6 +1,6 @@
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
-from .serializers import BoardSerializer, CommentSerializer, TaskSerializer
+from .serializers import BoardDetailSerializer, BoardSerializer, CommentSerializer, TaskSerializer
 from kanmind_app.models import Board, Comment, Task
 from rest_framework.response import Response
 
@@ -12,19 +12,12 @@ class BoardListCreateView(generics.ListCreateAPIView):
     
     def perform_create(self, serializer):
         board = serializer.save()
+        board.owner_id = self.request.user.userprofile
         board.members.add(self.request.user.userprofile)
-        
-    def post(self, request):
-        serializer = BoardSerializer(data=request.data)
-        if serializer.is_valid():
-            board = serializer.save()
-            board.owner_id = request.user.userprofile
-            board.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        board.save()
 
 class BoardDetailView(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = BoardSerializer
+    serializer_class = BoardDetailSerializer
     queryset = Board.objects.all()
     
 class TaskListCreateView(generics.ListCreateAPIView):

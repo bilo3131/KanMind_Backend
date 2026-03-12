@@ -22,15 +22,16 @@ class TaskSerializer(serializers.ModelSerializer):
         return obj.comments.count()
 
 class BoardSerializer(serializers.ModelSerializer):
-    tasks = TaskSerializer(many=True, read_only=True)
+    members = serializers.PrimaryKeyRelatedField(many=True, queryset=UserProfile.objects.all(), write_only=True, required=False)
     member_count = serializers.SerializerMethodField()
     ticket_count = serializers.SerializerMethodField()
     tasks_to_do_count = serializers.SerializerMethodField()
     tasks_high_prio_count = serializers.SerializerMethodField()
+    owner_id = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = Board
-        fields = ['id', 'title', 'members', 'tasks', 'owner_id', 'member_count', 'ticket_count', 'tasks_to_do_count', 'tasks_high_prio_count']
+        fields = ['id', 'members', 'title', 'member_count', 'ticket_count', 'tasks_to_do_count', 'tasks_high_prio_count', 'owner_id']
 
     def get_member_count(self, obj):
         return obj.members.count()
@@ -44,11 +45,14 @@ class BoardSerializer(serializers.ModelSerializer):
     def get_tasks_high_prio_count(self, obj):
         return obj.tasks.filter(priority='high').count()
     
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        data['members'] = UserProfileSerializer(
-            instance.members.all(), many=True).data
-        return data
+class BoardDetailSerializer(BoardSerializer):
+    members = UserProfileSerializer(many=True, read_only=True)
+    tasks = TaskSerializer(many=True, read_only=True)
+    owner_id = serializers.PrimaryKeyRelatedField(read_only=True)
+    
+    class Meta:
+        model = Board
+        fields = ['id', 'title', 'owner_id', 'members', 'tasks']
     
 class CommentSerializer(serializers.ModelSerializer):    
     class Meta:
