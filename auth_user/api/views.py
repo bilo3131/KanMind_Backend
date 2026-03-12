@@ -8,6 +8,8 @@ from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
 from django.contrib.auth.models import User
 from rest_framework import status
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.validators import validate_email
 
 def get_user_data(user, token):
     return {
@@ -53,9 +55,12 @@ class LoginView(APIView):
         return Response(serializer.errors, status=status.HTTP_401_UNAUTHORIZED)
     
 class EmailCheckView(APIView):
-    
     def get(self, request):
         email = request.query_params.get('email')
+        try:
+            validate_email(email)
+        except DjangoValidationError:
+            return Response({'detail': 'Invalid email format'}, status=status.HTTP_400_BAD_REQUEST)
         try:
             user = User.objects.get(email=email)
             data = {

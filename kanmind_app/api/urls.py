@@ -2,7 +2,6 @@ from django.urls import path
 from .views import AssignedTasksListView, BoardListCreateView, BoardDetailView, CommentDetailView, CommentListCreateView, ReviewingTasksListView, TaskListCreateView, TaskDetailView
 from auth_user.api.views import LoginView, UserProfileList, RegistrationView, UserProfileDetail, EmailCheckView
 
-
 urlpatterns = [
     path('profiles/', UserProfileList.as_view(), name='userprofile-list'),
     path('profiles/<int:pk>/', UserProfileDetail.as_view(), name='userprofile-detail'),
