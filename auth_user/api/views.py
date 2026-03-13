@@ -68,7 +68,7 @@ class LoginView(APIView):
     """
     POST /api/login/ — Authenticates a user by email and password.
     Returns token and user data on success (200).
-    Returns 401 if credentials are invalid.
+    Returns 400 if credentials are invalid.
     No authentication required.
     """
     permission_classes = [AllowAny]
@@ -81,7 +81,7 @@ class LoginView(APIView):
             token, created = Token.objects.get_or_create(user=user)
             data = get_user_data(user, token)
             return Response(get_user_data(user, token), status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_401_UNAUTHORIZED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class EmailCheckView(APIView):

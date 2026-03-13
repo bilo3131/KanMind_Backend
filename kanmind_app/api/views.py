@@ -2,8 +2,8 @@ from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from .serializers import BoardDetailSerializer, BoardSerializer, CommentSerializer, TaskSerializer
 from kanmind_app.models import Board, Comment, Task
-from .permissions import IsBoardMemberOrOwner, IsBoardOwner, IsTaskBoardMemberOrOwner
-from rest_framework.exceptions import NotFound, PermissionDenied
+from .permissions import IsBoardMember, IsBoardOwner, IsTaskBoardMember
+from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 
 
@@ -40,7 +40,7 @@ class BoardDetailView(generics.RetrieveUpdateDestroyAPIView):
         # Only the board owner is allowed to delete; members can read and update
         if self.request.method == 'DELETE':
             return [IsAuthenticated(), IsBoardOwner()]
-        return [IsAuthenticated(), IsBoardMemberOrOwner()]
+        return [IsAuthenticated(), IsBoardMember()]
 
 
 class TaskListCreateView(generics.ListCreateAPIView):
@@ -68,9 +68,9 @@ class TaskListCreateView(generics.ListCreateAPIView):
 
         # Assignee and reviewer must be members of the board
         if assignee_id and int(assignee_id) not in member_ids:
-            return Response({'assignee_id': 'User is not a member of this board.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'assignee_id': 'User is not a member of this board.'}, status=status.HTTP_403_FORBIDDEN)
         if reviewer_id and int(reviewer_id) not in member_ids:
-            return Response({'reviewer_id': 'User is not a member of this board.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'reviewer_id': 'User is not a member of this board.'}, status=status.HTTP_403_FORBIDDEN)
 
         return super().create(request, *args, **kwargs)
 
@@ -92,7 +92,7 @@ class CommentListCreateView(generics.ListCreateAPIView):
     Only accessible to members or the owner of the task's board.
     """
     serializer_class = CommentSerializer
-    permission_classes = [IsAuthenticated, IsTaskBoardMemberOrOwner]
+    permission_classes = [IsAuthenticated, IsTaskBoardMember]
 
     def get_queryset(self):
         return Comment.objects.filter(task_id=self.kwargs['task_pk'])
@@ -113,7 +113,7 @@ class CommentDetailView(generics.RetrieveUpdateDestroyAPIView):
     Only accessible to members or the owner of the task's board.
     """
     serializer_class = CommentSerializer
-    permission_classes = [IsAuthenticated, IsTaskBoardMemberOrOwner]
+    permission_classes = [IsAuthenticated, IsTaskBoardMember]
 
     def get_queryset(self):
         return Comment.objects.filter(task_id=self.kwargs['task_pk'])

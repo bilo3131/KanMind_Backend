@@ -2,7 +2,7 @@ from rest_framework import serializers
 from auth_user.models import UserProfile
 from kanmind_app.models import Board, Task, Comment
 from auth_user.api.serializers import UserProfileSerializer
-from .permissions import IsBoardMemberOrOwner
+from .permissions import IsBoardMember
 
 
 class TaskSerializer(serializers.ModelSerializer):
@@ -25,7 +25,7 @@ class TaskSerializer(serializers.ModelSerializer):
         model = Task
         fields = ['id', 'board', 'title', 'description', 'status', 'priority', 'assignee', 'reviewer',
                   'due_date', 'comments_count', 'assignee_id', 'reviewer_id']
-        permission_classes = [IsBoardMemberOrOwner]
+        permission_classes = [IsBoardMember]
 
     def get_comments_count(self, obj):
         return obj.comments.count()
