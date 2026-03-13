@@ -3,8 +3,9 @@ from rest_framework.permissions import IsAuthenticated
 from .serializers import BoardDetailSerializer, BoardSerializer, CommentSerializer, TaskSerializer
 from kanmind_app.models import Board, Comment, Task
 from .permissions import IsBoardMember, IsBoardOwner, IsTaskBoardMember
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
 
 
 class BoardListCreateView(generics.ListCreateAPIView):
@@ -51,7 +52,10 @@ class TaskListCreateView(generics.ListCreateAPIView):
                         are members of that board.
     """
     serializer_class = TaskSerializer
-    queryset = Task.objects.all()
+    
+    def get_queryset(self):
+        # Only return tasks from boards where the current user is a member
+        return Task.objects.filter(board__members__user=self.request.user)
 
     def create(self, request, *args, **kwargs):
         board_id = request.data.get('board')
@@ -83,6 +87,15 @@ class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
     """
     serializer_class = TaskSerializer
     queryset = Task.objects.all()
+    
+    
+    def get_object(self):
+        # Find the task (404 if it doesn't exist at all)
+        obj = get_object_or_404(Task, pk=self.kwargs['pk'])
+        # Then check if the user is a member of its board (403 if not)
+        if not obj.board.members.filter(user=self.request.user).exists():
+            raise PermissionDenied()
+        return obj
 
 
 class CommentListCreateView(generics.ListCreateAPIView):
