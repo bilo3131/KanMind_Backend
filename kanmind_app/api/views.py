@@ -2,8 +2,8 @@ from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from .serializers import BoardDetailSerializer, BoardSerializer, CommentSerializer, TaskSerializer
 from kanmind_app.models import Board, Comment, Task
-from .permissions import IsBoardMemberOrOwner, IsBoardOwner
-from rest_framework.exceptions import NotFound
+from .permissions import IsBoardMemberOrOwner, IsBoardOwner, IsTaskBoardMemberOrOwner
+from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.response import Response
 
 class BoardListCreateView(generics.ListCreateAPIView):
@@ -55,6 +55,7 @@ class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
     
 class CommentListCreateView(generics.ListCreateAPIView):
     serializer_class = CommentSerializer
+    permission_classes = [IsAuthenticated, IsTaskBoardMemberOrOwner]
     
     def get_queryset(self):
         return Comment.objects.filter(task_id=self.kwargs['task_pk'])
@@ -67,6 +68,7 @@ class CommentListCreateView(generics.ListCreateAPIView):
         
 class CommentDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = CommentSerializer
+    permission_classes = [IsAuthenticated, IsTaskBoardMemberOrOwner]
     
     def get_queryset(self):
         return Comment.objects.filter(task_id=self.kwargs['task_pk'])

@@ -77,13 +77,17 @@ class BoardDetailSerializer(BoardSerializer):
         members = validated_data.pop('members', None)
         instance = super().update(instance, validated_data)
         if members is not None:
+            removed_members = instance.members.exclude(id__in=[m.id for m in members])
+            Task.objects.filter(board=instance, assignee__in=removed_members).update(assignee=None)
+            Task.objects.filter(board=instance, reviewer__in=removed_members).update(reviewer=None)
             instance.members.set(members)
         return instance
     
-class CommentSerializer(serializers.ModelSerializer):    
+class CommentSerializer(serializers.ModelSerializer):
+    created_at = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     class Meta:
         model = Comment
-        fields = ['id', 'task', 'author', 'content', 'created_at']
+        fields = ['id', 'author', 'content', 'created_at']
         read_only_fields = ['task','author', 'created_at']
 
 
