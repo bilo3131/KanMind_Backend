@@ -2,6 +2,7 @@ from rest_framework import serializers
 from auth_user.models import UserProfile
 from kanmind_app.models import Board, Task, Comment
 from auth_user.api.serializers import UserProfileSerializer
+from .permissions import IsBoardMemberOrOwner
 
 
 class TaskSerializer(serializers.ModelSerializer):
@@ -15,8 +16,9 @@ class TaskSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Task
-        fields = ['id', 'title', 'description', 'status', 'priority', 'assignee', 'reviewer',
+        fields = ['id', 'board', 'title', 'description', 'status', 'priority', 'assignee', 'reviewer',
                   'due_date', 'comments_count', 'assignee_id', 'reviewer_id']
+        permission_classes = [IsBoardMemberOrOwner]
 
     def get_comments_count(self, obj):
         return obj.comments.count()
@@ -54,8 +56,23 @@ class BoardDetailSerializer(BoardSerializer):
     
     class Meta:
         model = Board
-        fields = ['id', 'title', 'owner_data', 'members', 'members_data', 'tasks']
+        fields = ['id', 'title', 'owner_id', 'owner_data', 'members', 'members_data', 'tasks']
         
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        request = self.context.get('request')
+        if request and request.method == 'PATCH':
+            data.pop('owner_id', None)
+            data.pop('members', None)
+            data.pop('tasks', None)
+        else:
+            data.pop('owner_data', None)
+            data.pop('members_data', None)
+            data['members'] = UserProfileSerializer(instance.members.all(), many=True).data
+            for task in data.get('tasks', []):
+                task.pop('board', None)
+        return data
+    
     def update(self, instance, validated_data):
         members = validated_data.pop('members', None)
         instance = super().update(instance, validated_data)

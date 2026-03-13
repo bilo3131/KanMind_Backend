@@ -2,8 +2,9 @@ from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from .serializers import BoardDetailSerializer, BoardSerializer, CommentSerializer, TaskSerializer
 from kanmind_app.models import Board, Comment, Task
-from rest_framework.response import Response
 from .permissions import IsBoardMemberOrOwner, IsBoardOwner
+from rest_framework.exceptions import NotFound
+from rest_framework.response import Response
 
 class BoardListCreateView(generics.ListCreateAPIView):
     serializer_class = BoardSerializer
@@ -29,6 +30,24 @@ class BoardDetailView(generics.RetrieveUpdateDestroyAPIView):
 class TaskListCreateView(generics.ListCreateAPIView):
     serializer_class = TaskSerializer
     queryset = Task.objects.all()
+    
+    def create(self, request, *args, **kwargs):
+        board_id = request.data.get('board')
+        if not Board.objects.filter(pk=board_id).exists():
+            raise NotFound('Board not found.')
+        
+        board = Board.objects.get(pk=board_id)
+        member_ids = board.members.values_list('id', flat=True)
+        
+        assignee_id = request.data.get('assignee_id')
+        reviewer_id = request.data.get('reviewer_id')
+        
+        if assignee_id and int(assignee_id) not in member_ids:
+            return Response({'assignee_id': 'User is not a member of this board.'}, status=status.HTTP_400_BAD_REQUEST)
+        if reviewer_id and int(reviewer_id) not in member_ids:
+            return Response({'reviewer_id': 'User is not a member of this board.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        return super().create(request, *args, **kwargs)
     
 class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = TaskSerializer
